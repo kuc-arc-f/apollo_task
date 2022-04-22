@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist",
+    "target": "es5",
+    "sourceMap": false,
+    "strict": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "removeComments": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node"
+  },
+  "include": ["./src/**/*", "./config.ts"],
+  "exclude": ["./src/test/*", "node_modules"]
+}
