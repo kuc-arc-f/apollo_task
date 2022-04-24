@@ -34,7 +34,10 @@ const resolvers = {
     }, 
     async task(parent, args, context, info){
       return await LibTaskItem.getItem(args.id);
-    },     
+    },
+    async tasksProject(parent, args, context, info){
+      return await LibTaskItem.tasksProject(args);
+    }, 
   },
   Mutation: {
     /* csrf */

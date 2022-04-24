@@ -10,6 +10,7 @@ export const GQL_QUERY = `
     countProjectMembers(projectId: Int, firebaseUid: String): Int
     tasks(projectId: Int): [Task]
     task(id: Int): Task
+    tasksProject(projectId: Int): TaskProject
 
   }
 `;

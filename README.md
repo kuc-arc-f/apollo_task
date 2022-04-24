@@ -6,7 +6,7 @@
 
  date    : 2022/04/21 
 
- update  :
+ update  : 2022/04/23
 
 ***
 ### Summary
@@ -17,7 +17,9 @@ Apollo Server + prisma ORM + supabase/postgres
 ***
 ### frontend: 
 
-task_group
+* task_group
+
+https://github.com/kuc-arc-f/task_group
 
 ***
 ### Setup

@@ -35,9 +35,17 @@ const scheme = {
       createdAt: String
       userId:   Int
     }
+    type TaskProject {
+      tasks: [Task]
+      project: Project
+    }    
     ${GQL_QUERY}
     ${GQL_MUTATION}
   `;
   }
 }
 export default scheme;
+/*
+type TaskProject {
+}
+*/

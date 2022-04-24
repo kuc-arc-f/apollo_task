@@ -8,19 +8,11 @@ export default {
   getItems :async function(args: any){
     try {
 console.log(args);
-/*
-      const user: any = await LibUser.getItem(args);
-      if(user === null){
-        throw new Error('Error , user nothing');
-      }
-*/
       const prisma = new PrismaClient()
       const items = await prisma.task.findMany({
         where: { projectId: args.projectId },
 //        where: { userId: user.id },
-//        orderBy: { id: 'desc',},
         orderBy: { complete: 'asc',},
-        //complete
       })
       await prisma.$disconnect()
       return items      
@@ -28,7 +20,29 @@ console.log(args);
       console.error(err);
       throw new Error('Error , getItems');
     }          
-  },    
+  }, 
+  /* タスク一覧の起動時データ */
+  tasksProject :async function(args: any){
+    try {
+console.log(args);
+      const prisma = new PrismaClient()
+      const tasks = await prisma.task.findMany({
+        where: { projectId: args.projectId },
+        orderBy: { complete: 'asc',},
+      });
+      let project = await prisma.project.findUnique({
+        where: { id: args.projectId },
+      })
+      await prisma.$disconnect()
+      const item = {
+        tasks: tasks, project: project,
+      }
+      return item;      
+    } catch (err) {
+      console.error(err);
+      throw new Error('Error , getItems');
+    }          
+  }, 
   getItem :async function(id: number){
     try {
       // 
