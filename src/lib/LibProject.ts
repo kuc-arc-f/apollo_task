@@ -1,41 +1,55 @@
-const { PrismaClient } = require('@prisma/client')
-//import LibCsrf from "./LibCsrf"
 //import logger from './logger'
 import LibUser from "./LibUser"
+import LibPg from './LibPg';
 
 export default {
-  getItems :async function(args: any){
+  /**
+  * getItems
+  * @param args: any
+  *
+  * @return Promise
+  */  
+  getItems :async function(args: any) : Promise<any[]>
+  {
     try {
 console.log(args);
-//
       const user: any = await LibUser.getItem(args);
       console.log( user);
       if(user === null){
         throw new Error('Error , user nothing');
       }
-/*
-*/
-      const prisma = new PrismaClient()
-      const items = await prisma.project.findMany({
-        where: { userId: user.id },
-        orderBy: { id: 'desc',},
-      })
-      await prisma.$disconnect()
-console.log(items);
-      return items      
+      const client = LibPg.getClient();
+      let text = `
+      SELECT * FROM public."Project" where "userId" = ${user.id}
+       ORDER BY id DESC
+      `;
+      let items = await client.query(text);
+      client.end();
+//console.log(items.rows);
+      return items.rows      
     } catch (err) {
       console.error(err);
       throw new Error('Error , getItems: ' + err);
     }          
   },    
-  getItem :async function(id: number){
+  /**
+  * getItems
+  * @param args: any
+  *
+  * @return Promise
+  */
+  getItem : async function(id: number): Promise<any>
+  {
     try {
-
-      const prisma = new PrismaClient();
-      let item = await prisma.project.findUnique({
-        where: { id: id },
-      });        
-      await prisma.$disconnect()
+      const client = LibPg.getClient();
+      let text = `
+      SELECT * FROM public."Project" where "id" = ${id}
+      `;
+      let item = await client.query(text);
+      if(item.rows.length > 0){
+        item = item.rows[0];
+      }      
+      client.end();
 //console.log(item);
       return item;
     } catch (err) {
@@ -43,7 +57,14 @@ console.log(items);
       throw new Error('Error , getItem');
     }          
   },
-  addProject :async function(args: any){
+  /**
+  * addProject
+  * @param args: any
+  *
+  * @return Promise<any>
+  */    
+  addProject :async function(args: any) : Promise<any>
+  {
     try {
       console.log( args);
       const invite = this.getInviteCode();
@@ -53,15 +74,25 @@ console.log( user);
       if(user === null){
         throw new Error('Error , user nothing');
       }
-      const prisma = new PrismaClient();
-      const result = await prisma.project.create({
-        data: {
-          name: args.name,
-          userId: user.id,
-          inveiteCode: invite,
-        }
-      }) 
-      await prisma.$disconnect()
+      const text = `
+      INSERT INTO public."Project" 
+      ("name", "userId", "inveiteCode", "createdAt", "updatedAt") 
+      VALUES
+      ($1, $2, $3, current_timestamp, current_timestamp)
+       RETURNING *
+      `;      
+      const values = [
+        args.name,
+        user.id,
+        invite,
+      ]; 
+      const client = LibPg.getClient();
+      const res = await client.query(text, values);
+      client.end();
+      let result = {};
+      if(res.rows.length > 0){
+        result = res.rows[0];
+      }
 //      console.log(result);
       return result;
     } catch (err) {
@@ -69,22 +100,38 @@ console.log( user);
       throw new Error('Error , addProject: '+ err);
     }          
   },
-  updateProject :async function(args: any){
+  /**
+  * updateProject
+  * @param args: any
+  *
+  * @return Promise<any>
+  */  
+  updateProject :async function(args: any): Promise<any>
+  {
     try {
       console.log(args);
+      /*
       const user: any = await LibUser.getItem(args);
       console.log( user);
       if(user === null){
         throw new Error('Error , user nothing');
       }
-      const prisma = new PrismaClient();
-      const result = await prisma.project.update({
-        where: { id: args.id},
-        data: {
-          name: args.name,
-        },
-      })               
-      await prisma.$disconnect()
+      */
+      const text = `
+      UPDATE public."Project" set "name" = $1
+      WHERE id = $2
+       RETURNING *
+      `;      
+      const values = [
+        args.name, args.id
+      ]; 
+      const client = LibPg.getClient();
+      const res = await client.query(text, values);
+      client.end();     
+      let result = {};
+      if(res.rows.length > 0){
+        result = res.rows[0];
+      }       
 console.log(result);
       return result;
     } catch (err) {
@@ -92,29 +139,59 @@ console.log(result);
       throw new Error('Error , updateProject ,'+ err);
     }          
   },
-  deleteProject :async function(args: any){
+  /**
+  * deleteProject
+  * @param args: any
+  *
+  * @return Promise<any>
+  */    
+  deleteProject: async function(args: any): Promise<any>
+  {
     try {
 console.log(args);
-      const prisma = new PrismaClient();
-      const result = await prisma.project.delete({
-        where: { id: Number(args.id) },
-      })                   
-      await prisma.$disconnect()
-console.log(result);
+      const text = `
+      DELETE FROM public."Project" WHERE id = $1 
+      RETURNING *
+      `;      
+      const values = [
+        Number(args.id)
+      ]; 
+      const client = LibPg.getClient();
+      const res = await client.query(text, values);
+      client.end();
+      let result = {};
+      if(res.rows.length > 0){
+        result = res.rows[0];
+      }      
+      console.log(result);
       return result;
     } catch (err) {
       console.error(err);
       throw new Error('Error , deleteProject,' + err);
     }          
   },
-  getRandomStr :function(){
+  /**
+  * getRandomStr
+  * @param args: any
+  *
+  * @return string
+  */  
+  getRandomStr :function(): string
+  {
     const s = "0123456789"
     const random = Math.floor( Math.random()* s.length );
     if(random >= s.length){ throw new Error('Error , getRandomStr'); }
    //    console.log(s.length ,random )
     return s[random]    
   },
-  getInviteCode :function(){
+  /**
+  * getInviteCode
+  * @param args: any
+  *
+  * @return string
+  */   
+  getInviteCode: function(): string
+  {
     try{
       let s = ""
       for(let i=0; i< 4; i++ ){

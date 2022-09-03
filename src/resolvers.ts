@@ -1,6 +1,4 @@
 
-import LibCsrf from './lib/LibCsrf';
-import LibTodo from './lib/LibTodo';
 import LibProject from './lib/LibProject';
 import LibUser from './lib/LibUser';
 import LibProjectMember from './lib/LibProjectMember';
@@ -40,10 +38,6 @@ const resolvers = {
     }, 
   },
   Mutation: {
-    /* csrf */
-    async addToken(parent, args, context, info){
-      return await LibCsrf.addToken(args);
-    },
     /* user */
     async addUser(parent, args, context, info){
       return await LibUser.addUser(args);

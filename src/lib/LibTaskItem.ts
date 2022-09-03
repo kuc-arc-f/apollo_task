@@ -1,64 +1,97 @@
-const { PrismaClient } = require('@prisma/client')
-import moment from 'moment';
-
+import LibPg from './LibPg';
+//import LibConfig from './LibConfig';
 import LibUser from "./LibUser"
 const TIME_INIT_STR = "T00:00:00.000Z"
 
 export default {
-  getItems :async function(args: any){
-    try {
-console.log(args);
-      const prisma = new PrismaClient()
-      const items = await prisma.task.findMany({
-        where: { projectId: args.projectId },
-//        where: { userId: user.id },
-        orderBy: { complete: 'asc',},
-      })
-      await prisma.$disconnect()
-      return items      
-    } catch (err) {
-      console.error(err);
-      throw new Error('Error , getItems');
-    }          
-  }, 
-  /* タスク一覧の起動時データ */
+  /**************************************
+   * タスク一覧の起動時データ
+   * params : any args
+   * return :
+   **************************************/  
   tasksProject :async function(args: any){
     try {
 console.log(args);
-      const prisma = new PrismaClient()
-      const tasks = await prisma.task.findMany({
-        where: { projectId: args.projectId },
-        orderBy: { complete: 'asc',},
-      });
-      let project = await prisma.project.findUnique({
-        where: { id: args.projectId },
-      })
-      await prisma.$disconnect()
-      const item = {
-        tasks: tasks, project: project,
+      const client = LibPg.getClient();
+      let text = `
+       SELECT * FROM public."Project" where id = ${args.projectId}
+      `;
+      let projects = await client.query(text);
+      let project = {};
+      if(projects.rows.length > 0){
+        project = projects.rows[0];
       }
+      text = `
+       SELECT * FROM public."Task" where "projectId" = ${args.projectId}
+      `;
+      let tasks = await client.query(text);
+//      console.log(tasks.rows);
+      const item = {
+        tasks: tasks.rows, project: project,
+      }
+      client.end();
       return item;      
+    } catch (err) {
+      console.error(err);
+      throw new Error('Error , getItems:' +err);
+    }          
+  },
+  /**************************************
+   * getItems
+   * params : any args
+   * return :
+   **************************************/
+  getItems :async function(args: any)
+  {
+    try {
+//console.log(args);
+      //pg
+      const client = LibPg.getClient();
+      let text = `
+       SELECT * FROM public."Task" where "projectId" = ${args.projectId}
+      `;
+      let tasks = await client.query(text);
+      client.end();
+//console.log(tasks.rows);      
+      return tasks.rows      
     } catch (err) {
       console.error(err);
       throw new Error('Error , getItems');
     }          
-  }, 
+  },
+  /**************************************
+   * getItems
+   * params : any args
+   * return :
+   **************************************/   
   getItem :async function(id: number){
     try {
-      // 
-      const prisma = new PrismaClient();
-      let item = await prisma.task.findUnique({
-        where: { id: id },
-      });        
-      await prisma.$disconnect()
-//console.log(item);
-      return item;
+      //pg
+      const client = LibPg.getClient();
+      let text = `
+       SELECT * FROM public."Task" where "id" = ${id}
+      `;
+      let tasks = await client.query(text);
+      client.end();
+//console.log(tasks.rows);
+      let task = {};
+      if(tasks.rows.length > 0){
+        task = tasks.rows[0];
+      }
+//console.log(task);
+      return task;
     } catch (err) {
       console.error(err);
       throw new Error('Error , getItem');
     }          
   },
-  addTaskItem :async function(args: any){
+  /**************************************
+   * addTaskItem
+   * params args: any
+   * return :
+   **************************************/
+  addTaskItem :async function(args: any)
+  {
     try {
       console.log( args);
       const user: any = await LibUser.getItem(args);
@@ -66,61 +99,88 @@ console.log(args);
       if(user === null){
         throw new Error('Error , user nothing');
       }
-//      const completeDate = new Date(args.complete + "-01" + TIME_INIT_STR) ;
       const completeDate = new Date(args.complete + TIME_INIT_STR) ;
-
-      const prisma = new PrismaClient();
-      const result = await prisma.task.create({
-        data: {
-          projectId: args.projectId,
-          title: args.title,
-          content: args.content,
-//          complete: new Date(),
-          complete: completeDate,
-          status: args.status,
-          userId: user.id,
-        }
-      }) 
-      await prisma.$disconnect()
-      console.log(result);
+      const text = `
+      INSERT INTO public."Task" 
+      ("projectId", title, content, "complete", "status", "userId", "createdAt", "updatedAt") 
+      VALUES
+      ($1, $2, $3, $4, $5, $6, current_timestamp, current_timestamp) RETURNING *
+      `;      
+      const values = [
+        args.projectId,
+        args.title,
+        args.content,
+        completeDate,
+        args.status,
+        user.id,
+      ];   
+      const client = LibPg.getClient();
+      const res = await client.query(text, values);
+      client.end();   
+//      console.log(result);
+      const result = res.rows[0];
+console.log(result);
       return result;
     } catch (err) {
       console.error(err);
       throw new Error('Error , addTaskItem: '+ err);
     }          
   },
-  updateTaskItem :async function(args: any){
+  /**************************************
+   * updateTaskItem
+   * params : args: any
+   * return :
+   **************************************/
+  updateTaskItem :async function(args: any)
+  {
     try {
 //console.log(args);
-
       const completeDate = new Date(args.complete + TIME_INIT_STR) ;
-      const prisma = new PrismaClient();
-      const result = await prisma.task.update({
-        where: { id: args.id},
-        data: {
-          title: args.title,
-          content: args.content,
-          status: args.status,
-          complete: completeDate,
-        },
-      })               
-      await prisma.$disconnect()
-console.log(result);
+      const text = `
+      UPDATE public."Task" SET title = $1,
+      content = $2,
+      status = $3, 
+      complete = $4,
+      "updatedAt" = current_timestamp
+      WHERE "id" = ${args.id}
+      RETURNING *
+      `;
+      const values = [
+        args.title,
+        args.content,
+        args.status,
+        completeDate,
+      ];
+//console.log(text);           
+      const client = LibPg.getClient();
+      const res = await client.query(text, values);
+      client.end();
+      const result = res.rows[0];
+//console.log(result);      
       return result;
     } catch (err) {
       console.error(err);
       throw new Error('Error , updateTaskItem,'+ err);
     }          
-  },  
-  deleteTaskItem :async function(args: any){
+  },
+  /**************************************
+   * deleteTaskItem
+   * params : args: any
+   * return :
+   **************************************/   
+  deleteTaskItem :async function(args: any)
+  {
     try {
-console.log(args);
-      const prisma = new PrismaClient();
-      const result = await prisma.task.delete({
-        where: { id: Number(args.id) },
-      })                   
-      await prisma.$disconnect()
-console.log(result);
+      const text = `
+      DELETE FROM public."Task" WHERE "id" = ${args.id}
+      RETURNING *
+      `;
+//console.log(text); 
+      const client = LibPg.getClient();
+      let res = await client.query(text);
+      client.end();
+      const result = res.rows[0];
+//console.log(result);      
       return result;
     } catch (err) {
       console.error(err);

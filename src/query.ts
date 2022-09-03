@@ -11,7 +11,6 @@ export const GQL_QUERY = `
     tasks(projectId: Int): [Task]
     task(id: Int): Task
     tasksProject(projectId: Int): TaskProject
-
   }
 `;
 

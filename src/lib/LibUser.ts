@@ -1,6 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
-import LibCsrf from "./LibCsrf"
-import logger from './logger'
+import LibPg from './LibPg';
 
 export default {
   getItems :async function(){
@@ -8,43 +6,62 @@ export default {
       console.log("tasks");
     } catch (err) {
       console.error(err);
-//      logger.error( "Error ,LibTask.getItems: "+ err);
       throw new Error('Error , getItems');
     }          
-  },    
-  getItem :async function(args: any){
+  },
+  /**************************************
+   * getItem
+   * params args: any
+   * return :
+   **************************************/    
+  getItem :async function(args: any)
+  {
     try {
-console.log(args);
-      const prisma = new PrismaClient();
-      let item = null;
-      let items = await prisma.user.findMany({
-        where: { firebaseUid: args.firebaseUid },
-      });        
-      await prisma.$disconnect()
-      if(items.length > 0){
-        item = items[0];
-      }
-console.log("len=", items.length);
-console.log(item);
-      return item;
+//console.log(args);
+    const client = LibPg.getClient();
+    let text = `
+    SELECT * FROM public."User" where "firebaseUid" = '${args.firebaseUid}'
+    `;
+    let tasks = await client.query(text);
+    client.end();
+    let task = null;
+    if(tasks.rows.length > 0){
+      task = tasks.rows[0];
+    }
+//console.log(task);    
+      return task;
     } catch (err) {
       console.error(err);
       throw new Error('Error , getItem');
     }          
   },
-  addUser :async function(args: any){
+  /**************************************
+   * addUser
+   * params args: any
+   * return :
+   **************************************/      
+  addUser: async function(args: any)
+  {
     try {
       console.log( args); 
-      const prisma = new PrismaClient();
-      const result = await prisma.user.create({
-        data: {
-          name: args.name,
-          email: args.email,
-          firebaseUid: args.firebaseUid,
-        }
-      }) 
-      await prisma.$disconnect()
-      console.log(result);
+      const text = `
+      INSERT INTO public."User" 
+      ("name", email, "firebaseUid", "createdAt", "updatedAt") 
+      VALUES
+      ($1, $2, $3, current_timestamp, current_timestamp)
+       RETURNING *
+      `;      
+      const values = [
+        args.name,
+        args.email,
+        args.firebaseUid,
+      ]; 
+      const client = LibPg.getClient();
+      const res = await client.query(text, values);
+      client.end();   
+//      console.log(result);
+      const result = res.rows[0];
+console.log(result);      
       return result;
     } catch (err) {
       console.error(err);
@@ -55,18 +72,7 @@ console.log(item);
     try {
 //console.log( args); 
 console.log(args);
-      const valid = await LibCsrf.validToken(args);
-      if(valid === false){
-        throw new Error('Error , validToken');
-      }
-      const prisma = new PrismaClient();
-      const result = await prisma.task.update({
-        where: { id: args.id},
-        data: { title: args.title },
-      })               
-      await prisma.$disconnect()
-console.log(result);
-      return result;
+      return {};
     } catch (err) {
       console.error(err);
       throw new Error('Error , updateTask,'+ err);
@@ -75,17 +81,7 @@ console.log(result);
   deleteTask :async function(args: any){
     try {
 console.log(args);
-      const valid = await LibCsrf.validToken(args);
-      if(valid === false){
-        throw new Error('Error , validToken');
-      }
-      const prisma = new PrismaClient();
-      const result = await prisma.task.delete({
-        where: { id: Number(args.id) },
-      })                   
-      await prisma.$disconnect()
-console.log(result);
-      return result;
+      return {};
     } catch (err) {
       console.error(err);
       throw new Error('Error , deleteTask,' + err);

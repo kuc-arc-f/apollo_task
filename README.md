@@ -1,17 +1,17 @@
 ﻿# apollo_task
 
- Version: 0.9.3
+ Version: 0.9.4
 
  Author  : Kouji Nakashima / kuc-arc-f.com
 
  date    : 2022/04/21 
 
- update  : 2022/04/23
+ update  : 2022/09/03
 
 ***
 ### Summary
 
-Apollo Server + prisma ORM + supabase/postgres
+Apollo Server + supabase/postgres
 
 
 ***
@@ -27,6 +27,12 @@ https://github.com/kuc-arc-f/task_group
 * .env:  set password, host , dbname
 ```
 DATABASE_URL="postgresql://postgres:__PASS__@__HOST__.supabase.co:5432/dbname"
+
+POSTGRES_DATABASE=""
+POSTGRES_USER="postgres"
+POSTGRES_PASSWORD=""
+POSTGRES_HOST="db._HOST.supabase.co"
+POSTGRES_PORT=5432
 ```
 
 * npm add
