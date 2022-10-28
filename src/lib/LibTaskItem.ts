@@ -23,7 +23,8 @@ console.log(args);
       }
       text = `
        SELECT * FROM public."Task" where "projectId" = ${args.projectId}
-      `;
+       ORDER BY public."Task"."complete" ASC      
+       `;
       let tasks = await client.query(text);
 //      console.log(tasks.rows);
       const item = {
